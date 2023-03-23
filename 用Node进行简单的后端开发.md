@@ -129,5 +129,93 @@ app.listen(3000, function () {
 
 ## 连接数据库
 
+我使用的数据库是mysql,所以这里只介绍在node项目中连接mysql.
+
+### 下载依赖模块
+
+```shell
+npm install mysql
+```
+
+### 连接
+
+```js
+const mysql = require('mysql')
+
+const connection = mysql.createConnection({
+	host: 'localhost', // IP地址
+  user: 'root', // 数据库用户
+  password: '123', // 用户密码
+  database: 'test' // 使用的数据库
+})
+// 由于上面提到了路由模块化,为了方便各个路由的使用 我们把这个连接也可以写成一个模块
+module.exports = connection
+```
+
+### 基本使用
+
+假设我们这时候已经在同目录下写了上面的连接模块, 文件名为==dblook.js==
+
+```js
+const db = require('./dblook')
+
+// 其中我们可以用?代替变量, 之后在执行的时候传入位置明确的变量数组
+const sql = `
+	select * from students
+	where id = ?;
+`
+// 第一个参数为sql语句,第二个参数就是sql语句中所需的变量,根据?出现的顺序放进指定的变量,第三个函数就是执行完成后触发的callback
+// 回调函数第一个参数为错误信息, 无错的时候为null; 第二个参数是sql执行的结果
+db.query(sql, [1], (error, result) => {
+  // ···
+})
+```
+
 ## 身份验证:JWT
+
+前端在登陆的时候,往往会拿到一个token,然后在之后的请求中带上这个token,这个token是后端来判断请求者身份的令牌.
+
+在express中我们可以用jsonwebtoken外接模块来轻松形成并验证token
+
+### 下载依赖模块
+
+```shell
+npm install jsonwebtoken
+```
+
+### 基本使用
+
+```js
+const jwt = require('jsonwebtoken');
+
+// 用于加密的密钥
+const SECRET = 'niganma'
+
+// 创建token
+// payload是我们附加进token的信息,例如用户信息
+module.exports.publish = (payload = {}, maxAge = 60 * 60 * 24) => {
+  return jwt.sign(payload, SECRET, {
+    expiresIn: maxAge
+  })
+}
+
+// 验证token
+module.exports.verify = (req) => {
+  let token = req.headers.authorization;
+  if (!token) {
+    return null;
+  }
+  //格式：authorization:bearer token
+  token = token.split(" ");
+  token = token.length === 1 ? token[0] : token[1];
+  try {
+    let result = jwt.verify(token, SECRET);
+    console.log("----->" + result);
+    return result;
+  } catch (err) {
+    return null;
+  }
+}
+
+```
 
